@@ -1,17 +1,52 @@
-const FS      = require('fs');
-const YAML    = require('yaml');
+const fs      = require('fs');
+const yaml    = require('yaml');
 const net     = require('net');
 const moment  = require('moment-timezone');
-const sql     = require('mssql');
 const yargs   = require('yargs');
+const crypto  = require('crypto');
+const { selectData, insertData, updateData } = require('./sql');
 
-const codes   = YAML.parse(
-  FS.readFileSync('codes.yml', 'utf8')
+const codes   = yaml.parse(
+  fs.readFileSync('codes.yml', 'utf8')
 ).codes;
 
-const config  = YAML.parse(
-  FS.readFileSync('config.yml', 'utf8')
+const config  = yaml.parse(
+  fs.readFileSync('config.yml', 'utf8')
 );
+
+function decryptHex(encrypted, password) {
+  try {
+    let iv = new Buffer(16);
+    iv.fill(0);
+    // let crypted = new Buffer(encrypted, 'hex').toString('binary');
+    let crypted = new Buffer(encrypted, 'hex');
+    let aes;
+    //  password = customPadding(password, 24, 0x0, "hex"); // magic happens here
+    switch (password.length) {
+      case 16:
+        aes = 'AES-128-CBC';
+        break;
+      case 24:
+        aes = 'aes-192-cbc';
+        break;
+      case 32:
+        aes = 'aes-256-cbc';
+        break;
+      default:
+        return undefined;
+    }
+    let decipher = crypto.createDecipheriv(aes, password, iv);
+    decipher.setAutoPadding(false);
+    // let decoded = decipher.update(crypted, 'binary', 'utf8');
+    // decoded += decipher.final('utf8');
+    let decoded = decipher.update(crypted, 'hex', 'utf8');
+    decoded += decipher.final('utf8');
+    return (decoded ? decoded : undefined);
+  } catch (e) {
+    console.error(e);
+    return undefined;
+  }
+}
 
 /*
  *  Specify default range to timestamps
@@ -68,57 +103,161 @@ const consoleDispatch = function(data, bot) {
 };
 
 /*
- *  MSSQL Dispatcher. Execute tables.sql and procedure.sql first.
+ *  MYSQL Dispatcher.
  */
-const mssqlDispatch = function(data, bot) {
-  if(bot.format !== undefined && bot.format != 'raw') {
-    let needle = codes.filter((item) => item.code == data.sia.code);
-    if(needle.length == 1) {
-      data.sia.shortDesc = needle[0].shortDescription;
-      data.sia.longDesc = needle[0].longDescription;
-      data.sia.addressType = needle[0].address;
-    }
+const mysqlDispatch = async function(data, bot) {
+  if (!data || !data.timestampH) {
+    console.error('No data to dispatch');
+    return;
   }
-  let database = {
-    user: bot.user,
-    password: bot.password,
-    server: bot.server,
-    database: bot.database,
-    port: bot.port?bot.port:1433
-  };
-  sql.connect(database)
-  .then(pool => {
-    return pool.request()
-           .input('Code', data.sia.code)
-           .input('Title', data.sia.shortDesc)
-           .input('Description', data.sia.longDesc)
-           .input('AddressType', data.sia.addressType)
-           .input('Account', data.account)
-           .input('Type', data.type)
-           .input('Prefix', data.prefix)
-           .input('Receiver', data.receiver)
-           .input('Address', data.sia.address)
-           .input('Timestamp', data.timestamp.pe)
-           .execute('registerSIAevent');
-  }).then(result => {
-    if(result.returnValue != 0) {
-      console.log('Execution of stored procedure has not been successful. Check "registerSIAevent" stored procedure.');
-    }
-  }).catch(err => {
-    console.error(err);
-  });
 
+  const now = moment().local();
+
+  // Insert the event
+  const dataToInsert = {
+    data_ora_dtr: data.timestampH.pe ?? data.timestampH.csr,
+    segnale_ids: data.sia.code,
+    segnale_id: null,
+    ingresso_obji: data.sia.address,
+    ingresso_id: null,
+    impianto_pnlcode: data.account,
+    impianto_id: null,
+    origine: 'SiaIP_'+config.server.port,
+    created_at: now.format('YYYY-MM-DD HH:mm:ss'),
+    updated_at: now.format('YYYY-MM-DD HH:mm:ss')
+  };
+
+  await insertData(bot, 'impianto_ricezione', dataToInsert);
+
+  // Update the event type id
+  await updateEventType(bot, data.sia.code);
+
+  // Update the system code; first try with all 6 chars
+  await updateSystemCode(bot, data.account);
+  // Then try with 4 chars
+  await updateSystemCode(bot, data.account.slice(-4));
+
+  // Update the zone id
+  await updateZoneCode(bot, data.account, data.sia.address);
 };
+
+/*
+ * Search for the event type id and update the events table
+ */
+const updateEventType = async function(bot, code) {
+  // Look for the id of the event type
+  const table = 'impianto_ricezione_segnale';
+  const columns = ['t.id', 't.codice_segnale'];
+  const whereConditions = ['t.codice_segnale = ?'];
+  const whereValues = [code];
+  const now = moment().local();
+
+  await selectData(bot, table, columns, whereConditions, whereValues, async (err, results) => {
+    if (err) {
+      console.error('Error:', err);
+    } else {
+      if (results.length > 0) {
+        // If found, update the column in the events table
+        const id = results[0].id;
+        const table = 'impianto_ricezione';
+        const setClause = { 
+          't.segnale_id': id,
+          't.updated_at': now.format('YYYY-MM-DD HH:mm:ss')
+        };
+        const whereConditions = [
+          't.segnale_id = ?',
+          't.segnale_ids = ?'
+        ];
+        const whereValues = [null, code];
+        await updateData(bot, table, setClause, whereConditions, whereValues);
+      }
+    }
+  });
+}
+
+/*
+ * Search for the system id and update the events table
+ */
+const updateSystemCode = async function(bot, code) {
+  // Look for the id of the system
+  const table = 'impsctec';
+  const columns = ['t.idsctec', 't.codprg'];
+  const whereConditions = ['t.codprg = ?'];
+  const whereValues = [code];
+  const now = moment().local();
+
+  await selectData(bot, table, columns, whereConditions, whereValues, async (err, results) => {
+    if (err) {
+      console.error('Error:', err);
+    } else {
+      if (results.length > 0) {
+        // If found, update the column in the events table
+        const id = results[0].idsctec;
+        const table = 'impianto_ricezione';
+        const setClause = { 
+          't.impianto_id': id,
+          't.updated_at': now.format('YYYY-MM-DD HH:mm:ss')
+        };
+        const whereConditions = [
+          't.impianto_id = ?',
+          't.impianto_pnlcode = ?',
+          'LENGTH(t.segnale_ids) = ?'
+        ];
+        const whereValues = [null, code, 2];
+        await updateData(bot, table, setClause, whereConditions, whereValues);
+      }
+    }
+  });
+}
+
+/*
+ * Search for the zone id and update the events table
+ */
+const updateZoneCode = async function(bot, code, zone) {
+  // Look for the id of the zone
+  const table = 'imppunti';
+  const columns = ['t.idzone, t.zona, t.idsctec'];
+  const whereConditions = [
+    't.idsctec = ?',
+    't.zona = ?'
+  ];
+  const whereValues = [code, zone];
+  const now = moment().local();
+
+  await selectData(bot, table, columns, whereConditions, whereValues, async (err, results) => {
+    if (err) {
+      console.error('Error:', err);
+    } else {
+      if (results.length > 0) {
+        // If found, update the column in the events table
+        const id = results[0].idzone;
+        const table = 'impianto_ricezione';
+        const setClause = { 
+          't.ingresso_id': id,
+          't.updated_at': now.format('YYYY-MM-DD HH:mm:ss')
+        };
+        const whereConditions = [
+          't.ingresso_id = ?',
+          't.impianto_pnlcode = ?',
+          't.ingresso_obji = ?',
+          'LENGTH(t.segnale_ids) = ?'
+        ];
+        const whereValues = [null, code, zone, 2];
+        await updateData(bot, table, setClause, whereConditions, whereValues);
+      }
+    }
+  });
+}
 
 /*
  *  Send the results to each one of dispatcher configured.
  */
-const dispatch = function(data) {
+const dispatch = async function(data) {
   if(config.dispatcher !== undefined) {
     config.dispatcher.forEach(bot => {
       switch(bot.type) {
-        case 'mssql':
-          mssqlDispatch(data, bot);
+        case 'mysql':
+          mysqlDispatch(data, bot);
           break;
         case 'console':
           consoleDispatch(data, bot);
@@ -195,34 +334,45 @@ const msgSize = function(str) {
 /*
  *  Transform socket data block to JSON object
  */
-const parseRequest = function(data) {
-  let csrTimestamp = moment.tz(new Date(), 'UTC');
+const parseRequest = async function(data, key_txt) {
+  const now = moment().local();
+  let csrTimestamp = now;
   let peTimestamp;
   let chunk = data.toString('utf8');
+  let data_encrypted_hex = chunk.substring(chunk.indexOf("[")+1);
+  let data_decrypted = decryptHex(data_encrypted_hex, key_txt);
+  if (!data_decrypted || data_decrypted == '') {
+    console.warn('Nessuna informazione utile in ', data_encrypted_hex);
+    return {};
+  }
+  let msgTimestamp = data_decrypted.slice(data_decrypted.lastIndexOf("_"));
+  let relevantData = data_decrypted.slice(data_decrypted.lastIndexOf("|")+1, data_decrypted.lastIndexOf("]"));
+
   let msg = chunk.substring(chunk.indexOf('"'));
   msg = msg.substring(0, msg.lastIndexOf("\r"));
-  let crc = crc16str(msg);
+  // let crc = crc16str(msg);
   let size = msgSize(msg);
   let type = msg.substring(1, msg.lastIndexOf('"'));
   let id = msg.substring(msg.lastIndexOf('"') + 1, msg.lastIndexOf('['));
-  let msgTimestamp = msg.substring(msg.lastIndexOf(']') + 1);
   if(msgTimestamp != '') {
-    peTimestamp = moment.tz(msgTimestamp, '_HH:mm:ss,MM-DD-YYYY', 'UTC');
+    peTimestamp = moment.tz(msgTimestamp, '_HH:mm:ss,MM-DD-YYYY', 'UTC').local();
   } else {
-    peTimestamp = moment(csrTimestamp);
+    peTimestamp = now;
   }
   let timestamp = {
     pe: parseInt(peTimestamp.format('X')),
     csr: parseInt(csrTimestamp.format('X')),
     diff: parseInt(peTimestamp.format('X')) - parseInt(csrTimestamp.format('X'))
   }
-  let servertimestamp = moment().format('X');
-  let account = id.substring(id.indexOf('#'));
+  let timestampH = {
+    pe: peTimestamp.format('YYYY-MM-DD HH:mm:ss'),
+    csr: csrTimestamp.format('YYYY-MM-DD HH:mm:ss'),
+    diff: parseInt(peTimestamp.format('X')) - parseInt(csrTimestamp.format('X'))
+  }
+  let account = id.substring(id.indexOf('#')+1);
   let prefix = id.substring(id.indexOf('L'), id.indexOf('#'));
-  let receiver = id.indexOf('R') != -1?id.substring(id.indexOf('R'), id.indexOf('L')):'';
   let sequence = id.indexOf('R') != -1?id.substring(0, id.indexOf('R')):id.substring(0, id.indexOf('L'));
 
-  let block = msg.substring(msg.indexOf('[') + 1, msg.indexOf(']'));
   let sia = {
     data: null,
     code: null,
@@ -232,32 +382,32 @@ const parseRequest = function(data) {
     addressType: null
   };
 
+  if (relevantData !== '') {
+    sia.code = relevantData.slice(1,3);
+    let address = '';
+    let caret = relevantData.indexOf("^");
+    if (caret == -1) {
+      address = relevantData.substring(3);
+    }
+    else {
+      address = relevantData.substring(3, caret);
+    }
+    sia.address = address ? Number(address) : null;
+  }
+
   let responseMsg;
   if(timestamp.diff < config.server.diff.negative || timestamp.diff > config.server.diff.positive) {
     let timestamp = csrTimestamp.format('_HH:mm:ss,MM-DD-YYYY');
     responseMsg = `"NAK"0000R0L0[]${timestamp}`;
   } else {
-    responseMsg = `"ACK"${sequence}${receiver}${prefix}${account}[]`;
+    responseMsg = `"ACK"${sequence}${prefix}${account}[]`;
   }
-  if(receiver == '') {
-    receiver = null;
-  }
-  if(block == '') {
-    block = null;
-  } else {
-    sia.data = block.substring(block.indexOf('|') + 1);
-    let temp = sia.data.substring(sia.data.indexOf('N') + 1);
-    if(temp.substring(0, 2) == 'ri') {
-      temp = temp.substring(temp.indexOf('/') + 1)
-    }
-    sia.code = temp.substring(0, 2);
-    sia.address = temp.substring(2);
-  }
+
   let responseCrc = crc16str(responseMsg);
   let responseSize = msgSize(responseMsg);
   let response = `\n${responseCrc}${responseSize}${responseMsg}\r`;
 
-  return {chunk, msg, crc, size, type, id, account, prefix, receiver, sequence, block, sia, timestamp, response};
+  return {chunk, data_decrypted, size, type, account, prefix, sia, timestamp, timestampH, response};
 };
 
 /*
@@ -267,11 +417,13 @@ let server = net.createServer(function(socket) {
   socket.on('error', function(err) {
     console.error(err)
   });
-  socket.on('data', function(data) {
-    let request = parseRequest(data);
-    dispatch(request);
-    let response = request.response;
-    let status = socket.write(response);
+  socket.on('data', async function(data) {
+    let request = await parseRequest(data, config.server.key);
+    if (request) {
+      await dispatch(request);
+      let response = request.response;
+      let status = socket.write(response);
+    }
   });
 });
 
