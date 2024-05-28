@@ -171,6 +171,7 @@ const updateEventType = async function(bot, code) {
           't.segnale_ids = ?'
         ];
         const whereValues = [null, code];
+        console.log('Update impianto_ricezione: set segnale_id to', id);
         await updateData(bot, table, setClause, whereConditions, whereValues);
       }
     }
@@ -206,6 +207,7 @@ const updateSystemCode = async function(bot, code) {
           'LENGTH(t.segnale_ids) = ?'
         ];
         const whereValues = [null, code, 2];
+        console.log('Update impianto_ricezione: set impianto_id to', id);
         await updateData(bot, table, setClause, whereConditions, whereValues);
       }
     }
@@ -245,6 +247,7 @@ const updateZoneCode = async function(bot, code, zone) {
           'LENGTH(t.segnale_ids) = ?'
         ];
         const whereValues = [null, code, zone, 2];
+        console.log('Update impianto_ricezione: set ingresso_id to', id);
         await updateData(bot, table, setClause, whereConditions, whereValues);
       }
     }
