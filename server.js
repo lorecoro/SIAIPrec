@@ -138,7 +138,9 @@ const mysqlDispatch = async function(data, bot) {
   await updateSystemCode(bot, data.account.slice(-4));
 
   // Update the zone id
-  await updateZoneCode(bot, data.account, data.sia.address);
+  if (!isNaN(data.sia.address)) {
+    await updateZoneCode(bot, data.account, data.sia.address);
+  }
 };
 
 /*

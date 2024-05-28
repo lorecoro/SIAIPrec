@@ -21,6 +21,7 @@ node server.js --help
 ```yaml
 server:
   port: 8094
+  key: '0123456789abcdef'
   diff:
     negative: -20
     positive: 40
@@ -30,7 +31,7 @@ dispatcher:
     format: 'human'
     user: 'foo'
     password: 'P4$$w0Rd'
-    database: 'sia-events-db'
+    database: 'db'
     server: '10.0.2.15'
     port: 1433
 ```

@@ -6,7 +6,7 @@ const ca = fs.readFileSync('ssl/ca-cert.pem');
 const cert = fs.readFileSync('ssl/client-cert.pem');
 const key = fs.readFileSync('ssl/client-key.pem');
 
-
+// Function to connect to the database
 async function connectToDb(bot) {
   const con = sql.createConnection({
     host: bot.server,
@@ -30,6 +30,7 @@ async function connectToDb(bot) {
   return con;
 }
 
+// Function to disconnect from the database
 async function disconnectFromDb(con) {
   con.end((err) => {
     if (err) {
@@ -105,6 +106,7 @@ async function insertData(bot, table, data) {
   await disconnectFromDb(connection);
 }
 
+// Function to update data in a table
 async function updateData(bot, table, setClause, whereConditions, whereValues) {
   const connection = await connectToDb(bot);
 
@@ -143,6 +145,7 @@ async function updateData(bot, table, setClause, whereConditions, whereValues) {
   await disconnectFromDb(connection);
 }
 
+// Function to update data in a table with a JOIN
 async function updateDataWithJoin(table1, table2, setClause, joinCondition, whereConditions) {
   const sql = `
     UPDATE ?? AS t1
