@@ -3,13 +3,32 @@ const yaml    = require('yaml');
 const sql     = require('mysql');
 
 // Read the SSL certificate files
-const ca = fs.readFileSync('ssl/ca-cert.pem');
-const cert = fs.readFileSync('ssl/client-cert.pem');
-const key = fs.readFileSync('ssl/client-key.pem');
+const ca      = fs.readFileSync('ssl/ca-cert.pem');
+const cert    = fs.readFileSync('ssl/client-cert.pem');
+const key     = fs.readFileSync('ssl/client-key.pem');
 
 const config  = yaml.parse(
   fs.readFileSync('config.yml', 'utf8')
 );
+
+let locked    = false;
+const maxAttempts = 20;
+
+async function lock() {
+  // Wait until the lock is removed, and then lock it again
+  let count = 0;
+  while (count < maxAttempts) {
+    if (locked) {
+      await new Promise(resolve => setTimeout(resolve, 100));
+      count++;
+    }
+  }
+  locked = true;
+}
+
+async function unlock() {
+  locked = false;
+}
 
 // Function to connect to the database
 async function connectToDb(bot) {
@@ -108,6 +127,7 @@ async function selectDataWithJoin(
 
 // Function to insert data into a table
 async function insertData(bot, table, data) {
+  await lock();
   const connection = await connectToDb(bot);
   const sql = `INSERT INTO ?? SET ?`;
   connection.query(sql, [table, data], (err, results) => {
@@ -121,12 +141,13 @@ async function insertData(bot, table, data) {
       console.log('Data inserted, ID:', results.insertId);
     }
   });
-
+  await unlock();
   await disconnectFromDb(connection);
 }
 
 // Function to update data in a table
 async function updateData(bot, table, setClause, whereConditions, whereValues) {
+  await lock();
   const connection = await connectToDb(bot);
 
   // Construct the SET clause from the setClause object
@@ -164,12 +185,13 @@ async function updateData(bot, table, setClause, whereConditions, whereValues) {
       console.log('Data updated, affected rows:', results.affectedRows);
     }
   });
-
+  await unlock();
   await disconnectFromDb(connection);
 }
 
 // Function to update data in a table with a JOIN
 async function updateDataWithJoin(table1, table2, setClause, joinCondition, whereConditions) {
+  await lock();
   const sql = `
     UPDATE ?? AS t1
     JOIN ?? AS t2 ON ${joinCondition}
@@ -187,6 +209,8 @@ async function updateDataWithJoin(table1, table2, setClause, joinCondition, wher
       console.log('Data updated, affected rows:', results.affectedRows);
     }
   });
+  await unlock();
+  await disconnectFromDb(connection);
 }
 
 module.exports = { selectData, selectDataWithJoin, insertData, updateData, updateDataWithJoin };
