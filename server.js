@@ -10,6 +10,10 @@ const codes   = yaml.parse(
   fs.readFileSync('codes.yml', 'utf8')
 ).codes;
 
+const bl      = yaml.parse(
+  fs.readFileSync('blacklist.yml', 'utf8')
+).codes;
+
 const config  = yaml.parse(
   fs.readFileSync('config.yml', 'utf8')
 );
@@ -375,6 +379,12 @@ const parseRequest = async function(data, key_txt) {
     diff: parseInt(peTimestamp.format('X')) - parseInt(csrTimestamp.format('X'))
   }
   let account = id.substring(id.indexOf('#')+1);
+
+  // Check if the code is in the blacklist
+  if (bl.some(item => item.code === account)) {
+    return false;
+  }
+
   let prefix = id.substring(id.indexOf('L'), id.indexOf('#'));
   let sequence = id.indexOf('R') != -1?id.substring(0, id.indexOf('R')):id.substring(0, id.indexOf('L'));
 
