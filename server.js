@@ -97,14 +97,6 @@ if(argv.debug) {
  *  RAW dispatcher to console. Useful for debugging.
  */
 const consoleDispatch = function(data, bot) {
-  if(bot.format !== undefined && bot.format != 'raw' && data.type == 'SIA-DCS') {
-    let needle = codes.filter((item) => item.code == data.sia.code);
-    if(needle.length == 1) {
-      data.sia.shortDesc = needle[0].shortDescription;
-      data.sia.longDesc = needle[0].longDescription;
-      data.sia.addressType = needle[0].address;
-    }
-  }
   console.log({data});
 };
 
@@ -378,7 +370,7 @@ const parseRequest = async function(data, key_txt) {
   let msg = chunk.substring(chunk.indexOf('"'));
   msg = msg.substring(0, msg.lastIndexOf("\r"));
   // let crc = crc16str(msg);
-  let size = msgSize(msg);
+  // let size = msgSize(msg);
   let type = msg.substring(1, msg.lastIndexOf('"'));
   let id = msg.substring(msg.lastIndexOf('"') + 1, msg.lastIndexOf('['));
   if(msgTimestamp != '') {
@@ -415,9 +407,6 @@ const parseRequest = async function(data, key_txt) {
     data: null,
     code: null,
     address: null,
-    shortDesc: null,
-    longDesc: null,
-    addressType: null
   };
 
   if (relevantData !== '') {
@@ -450,7 +439,7 @@ const parseRequest = async function(data, key_txt) {
   let responseSize = msgSize(responseMsg);
   let response = `\n${responseCrc}${responseSize}${responseMsg}\r`;
 
-  return {chunk, data_decrypted, size, type, account, prefix, sia, timestamp, timestampH, response};
+  return {data_decrypted, type, account, sia, timestamp, timestampH, response};
 };
 
 /*
