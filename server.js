@@ -365,6 +365,11 @@ const parseRequest = async function(data, key_txt) {
   let id = msg.substring(msg.lastIndexOf('"') + 1, msg.lastIndexOf('['));
   if(msgTimestamp != '') {
     peTimestamp = moment.tz(msgTimestamp, '_HH:mm:ss,MM-DD-YYYY', 'UTC').local();
+    // Timezone might be UTC or UTC+2
+    const tempdiff = parseInt(peTimestamp.format('X')) - parseInt(csrTimestamp.format('X'));
+    if (tempdiff > 6900 && tempdiff < 7500) {
+      peTimestamp = moment.tz(msgTimestamp, '_HH:mm:ss,MM-DD-YYYY').local();
+    }
   } else {
     peTimestamp = now;
   }
@@ -399,7 +404,7 @@ const parseRequest = async function(data, key_txt) {
 
   if (relevantData !== '') {
     // Certe stringhe iniziano con Nri0 anziche' con N: rimuovo i primi 3 caratteri
-    let nri0 = relevantData.indexOf("Nri0");
+    let nri0 = relevantData.indexOf("Nri");
     if (nri0 > -1) {
       relevantData = relevantData.substring(3);
     }
