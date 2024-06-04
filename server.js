@@ -383,15 +383,16 @@ const parseRequest = async function(data, key_txt) {
   } else {
     peTimestamp = now;
   }
+  const diff = parseInt(peTimestamp.format('X')) - parseInt(csrTimestamp.format('X'));
   let timestamp = {
     pe: parseInt(peTimestamp.format('X')),
     csr: parseInt(csrTimestamp.format('X')),
-    diff: parseInt(peTimestamp.format('X')) - parseInt(csrTimestamp.format('X'))
+    diff
   }
   let timestampH = {
     pe: peTimestamp.format('YYYY-MM-DD HH:mm:ss'),
     csr: csrTimestamp.format('YYYY-MM-DD HH:mm:ss'),
-    diff: parseInt(peTimestamp.format('X')) - parseInt(csrTimestamp.format('X'))
+    diff
   }
   let account = id.substring(id.indexOf('#')+1);
 
@@ -429,6 +430,9 @@ const parseRequest = async function(data, key_txt) {
 
   let responseMsg;
   if(timestamp.diff < config.server.diff.negative || timestamp.diff > config.server.diff.positive) {
+    if (config.server.verbose > 0) {
+      console.log('Comunicazione respinta per ora centrale sballata');
+    }
     let timestamp = csrTimestamp.format('_HH:mm:ss,MM-DD-YYYY');
     responseMsg = `"NAK"0000R0L0[]${timestamp}`;
   } else {
