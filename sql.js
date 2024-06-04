@@ -6,6 +6,10 @@ const ca = fs.readFileSync('ssl/ca-cert.pem');
 const cert = fs.readFileSync('ssl/client-cert.pem');
 const key = fs.readFileSync('ssl/client-key.pem');
 
+const config  = yaml.parse(
+  fs.readFileSync('config.yml', 'utf8')
+);
+
 // Function to connect to the database
 async function connectToDb(bot) {
   const con = sql.createConnection({
