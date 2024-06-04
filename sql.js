@@ -22,8 +22,10 @@ async function connectToDb(bot) {
   
   con.connect((err) => {
     if (err) {
+      if(config.server.verbose > 0) {
         console.error('Error connecting to the database:', err.stack);
-        return;
+      }
+      return;
     }
   });
 
@@ -36,7 +38,9 @@ async function connectToDb(bot) {
 async function disconnectFromDb(con) {
   con.end((err) => {
     if (err) {
+      if(config.server.verbose > 0) {
         console.error('Error closing the database connection:', err.stack);
+      }
     }
   });
 }
@@ -56,7 +60,9 @@ async function selectData(
   
   connection.query(sql, whereValues, (err, results) => {
     if (err) {
-      console.error('Error selecting data:', err.stack);
+      if(config.server.verbose > 0) {
+        console.error('Error selecting data:', err.stack);
+      }
       callback(err, null);
       return;
     }
@@ -83,7 +89,9 @@ async function selectDataWithJoin(
   
   connection.query(sql, whereValues, (err, results) => {
     if (err) {
-      console.error('Error selecting data:', err.stack);
+      if(config.server.verbose > 0) {
+        console.error('Error selecting data:', err.stack);
+      }
       callback(err, null);
       return;
     }
@@ -99,10 +107,14 @@ async function insertData(bot, table, data) {
   const sql = `INSERT INTO ?? SET ?`;
   connection.query(sql, [table, data], (err, results) => {
     if (err) {
-      console.error('Error inserting data:', err.stack);
+      if(config.server.verbose > 0) {
+        console.error('Error inserting data:', err.stack);
+      }
       return;
     }
-    console.log('Data inserted, ID:', results.insertId);
+    if(config.server.verbose > 1) {
+      console.log('Data inserted, ID:', results.insertId);
+    }
   });
 
   await disconnectFromDb(connection);
@@ -138,10 +150,14 @@ async function updateData(bot, table, setClause, whereConditions, whereValues) {
   const values = [...Object.values(setClause), ...filteredWhereValues];
   connection.query(sql, values, (err, results) => {
     if (err) {
-      console.error('Error updating data:', err.stack);
+      if(config.server.verbose > 0) {
+        console.error('Error updating data:', err.stack);
+      }
       return;
     }
-    console.log('Data updated, affected rows:', results.affectedRows);
+    if(config.server.verbose > 1) {
+      console.log('Data updated, affected rows:', results.affectedRows);
+    }
   });
 
   await disconnectFromDb(connection);
@@ -157,10 +173,14 @@ async function updateDataWithJoin(table1, table2, setClause, joinCondition, wher
   `;
   connection.query(sql, [table1, table2, setClause], (err, results) => {
     if (err) {
-      console.error('Error updating data:', err.stack);
+      if(config.server.verbose > 0) {
+        console.error('Error updating data:', err.stack);
+      }
       return;
     }
-    console.log('Data updated, affected rows:', results.affectedRows);
+    if(config.server.verbose > 1) {
+      console.log('Data updated, affected rows:', results.affectedRows);
+    }
   });
 }
 

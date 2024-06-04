@@ -1,6 +1,7 @@
 server:
   port: 8094
   key: 'bviM13HqVrmkIfN0'
+  verbose: 2
   diff:
     negative: -20
     positive: 40

@@ -47,7 +47,9 @@ function decryptHex(encrypted, password) {
     decoded += decipher.final('utf8');
     return (decoded ? decoded : undefined);
   } catch (e) {
-    console.error(e);
+    if(config.server.verbose > 0) {
+      console.error(e);
+    }
     return undefined;
   }
 }
@@ -111,7 +113,9 @@ const consoleDispatch = function(data, bot) {
  */
 const mysqlDispatch = async function(data, bot) {
   if (!data || !data.timestampH) {
-    console.error('No data to dispatch');
+    if(config.server.verbose > 1) {
+      console.error('No data to dispatch');
+    }
     return;
   }
 
@@ -160,7 +164,9 @@ const updateEventType = async function(bot, code) {
 
   await selectData(bot, table, columns, whereConditions, whereValues, async (err, results) => {
     if (err) {
-      console.error('Error:', err);
+      if(config.server.verbose > 0) {
+        console.error('Error:', err);
+      }
     } else {
       if (results.length > 0) {
         // If found, update the column in the events table
@@ -175,7 +181,9 @@ const updateEventType = async function(bot, code) {
           't.segnale_ids = ?'
         ];
         const whereValues = [null, code];
-        console.log('Update impianto_ricezione: set segnale_id to', id);
+        if(config.server.verbose > 1) {
+          console.log('Update impianto_ricezione: set segnale_id to', id);
+        }
         await updateData(bot, table, setClause, whereConditions, whereValues);
       }
     }
@@ -195,7 +203,9 @@ const updateSystemCode = async function(bot, code) {
 
   await selectData(bot, table, columns, whereConditions, whereValues, async (err, results) => {
     if (err) {
-      console.error('Error:', err);
+      if(config.server.verbose > 0) {
+        console.error('Error:', err);
+      }
     } else {
       if (results.length > 0) {
         // If found, update the column in the events table
@@ -211,7 +221,9 @@ const updateSystemCode = async function(bot, code) {
           'LENGTH(t.segnale_ids) = ?'
         ];
         const whereValues = [null, code, 2];
-        console.log('Update impianto_ricezione: set impianto_id to', id);
+        if(config.server.verbose > 1) {
+          console.log('Update impianto_ricezione: set impianto_id to', id);
+        }
         await updateData(bot, table, setClause, whereConditions, whereValues);
       }
     }
@@ -234,7 +246,9 @@ const updateZoneCode = async function(bot, code, zone) {
 
   await selectData(bot, table, columns, whereConditions, whereValues, async (err, results) => {
     if (err) {
-      console.error('Error:', err);
+      if(config.server.verbose > 0) {
+        console.error('Error:', err);
+      }
     } else {
       if (results.length > 0) {
         // If found, update the column in the events table
@@ -251,7 +265,9 @@ const updateZoneCode = async function(bot, code, zone) {
           't.origine LIKE ?'
         ];
         const whereValues = [null, code, zone, "SiaIP%"];
-        console.log('Update impianto_ricezione: set ingresso_id to', id);
+        if(config.server.verbose > 1) {
+          console.log('Update impianto_ricezione: set ingresso_id to', id);
+        }
         await updateData(bot, table, setClause, whereConditions, whereValues);
       }
     }
@@ -351,7 +367,9 @@ const parseRequest = async function(data, key_txt) {
   let data_encrypted_hex = chunk.substring(chunk.indexOf("[")+1);
   let data_decrypted = decryptHex(data_encrypted_hex, key_txt);
   if (!data_decrypted || data_decrypted == '') {
-    console.warn('Nessuna informazione utile in ', data_encrypted_hex);
+    if(config.server.verbose > 1) {
+      console.warn('Nessuna informazione utile in ', data_encrypted_hex);
+    }
     return {};
   }
   let msgTimestamp = data_decrypted.slice(data_decrypted.lastIndexOf("_"));
@@ -440,7 +458,9 @@ const parseRequest = async function(data, key_txt) {
  */
 let server = net.createServer(function(socket) {
   socket.on('error', function(err) {
-    console.error(err)
+    if(config.server.verbose > 0) {
+      console.error(err);
+    }
   });
   socket.on('data', async function(data) {
     let request = await parseRequest(data, config.server.key);
