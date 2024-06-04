@@ -398,6 +398,11 @@ const parseRequest = async function(data, key_txt) {
   };
 
   if (relevantData !== '') {
+    // Certe stringhe iniziano con Nri0 anziche' con N: rimuovo i primi 3 caratteri
+    let nri0 = relevantData.indexOf("Nri0");
+    if (nri0 > -1) {
+      relevantData = relevantData.substring(3);
+    }
     sia.code = relevantData.slice(1,3);
     let address = '';
     let caret = relevantData.indexOf("^");
