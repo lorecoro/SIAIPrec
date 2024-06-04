@@ -27,6 +27,8 @@ async function connectToDb(bot) {
     }
   });
 
+  con.query("SET SESSION sql_mode = 'NO_ENGINE_SUBSTITUTION'");
+
   return con;
 }
 
