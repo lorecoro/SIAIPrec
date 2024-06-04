@@ -248,9 +248,9 @@ const updateZoneCode = async function(bot, code, zone) {
           't.ingresso_id = ?',
           't.impianto_pnlcode = ?',
           't.ingresso_obji = ?',
-          'LENGTH(t.segnale_ids) = ?'
+          't.origine LIKE ?'
         ];
-        const whereValues = [null, code, zone, 2];
+        const whereValues = [null, code, zone, "SiaIP%"];
         console.log('Update impianto_ricezione: set ingresso_id to', id);
         await updateData(bot, table, setClause, whereConditions, whereValues);
       }
