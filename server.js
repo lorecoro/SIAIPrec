@@ -374,11 +374,11 @@ const parseRequest = async function(data, key_txt) {
   let type = msg.substring(1, msg.lastIndexOf('"'));
   let id = msg.substring(msg.lastIndexOf('"') + 1, msg.lastIndexOf('['));
   if(msgTimestamp != '') {
-    peTimestamp = moment.tz(msgTimestamp, '_HH:mm:ss,MM-DD-YYYY', 'UTC').local();
-    // Timezone might be UTC or UTC+2
+    peTimestamp = moment.utc(msgTimestamp, '_HH:mm:ss,MM-DD-YYYY');
+    // Timezone might be UTC or local
     const tempdiff = parseInt(peTimestamp.format('X')) - parseInt(csrTimestamp.format('X'));
     if (tempdiff > 6900 && tempdiff < 7500) {
-      peTimestamp = moment.tz(msgTimestamp, '_HH:mm:ss,MM-DD-YYYY', 'UTC');
+      peTimestamp = moment(msgTimestamp, '_HH:mm:ss,MM-DD-YYYY');
     }
   } else {
     peTimestamp = now;
