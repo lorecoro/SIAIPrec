@@ -1,4 +1,5 @@
 const fs      = require('fs');
+const yaml    = require('yaml');
 const sql     = require('mysql');
 
 // Read the SSL certificate files
