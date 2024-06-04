@@ -122,7 +122,7 @@ const mysqlDispatch = async function(data, bot) {
     data_ora_dtr: data.timestampH.pe ?? data.timestampH.csr,
     segnale_ids: data.sia.code,
     segnale_id: null,
-    ingresso_obji: data.sia.address,
+    ingresso_obji: Number.isInteger(data.sia.address) ? data.sia.address : null,
     ingresso_id: null,
     impianto_pnlcode: data.account,
     impianto_id: null,
