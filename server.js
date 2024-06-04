@@ -431,7 +431,7 @@ const parseRequest = async function(data, key_txt) {
   let responseMsg;
   if(timestamp.diff < config.server.diff.negative || timestamp.diff > config.server.diff.positive) {
     if (config.server.verbose > 0) {
-      console.log('Comunicazione respinta per ora centrale sballata');
+      console.warn('Comunicazione respinta per ora centrale sballata');
     }
     let timestamp = csrTimestamp.format('_HH:mm:ss,MM-DD-YYYY');
     responseMsg = `"NAK"0000R0L0[]${timestamp}`;
