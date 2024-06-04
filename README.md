@@ -2,18 +2,18 @@
 
 Allows you to log SIA-DC-09 events to a MySQL database.
 
+Certain peripherals can be ignored by adding them to a blacklist.yml file
+
 ## Standard compatibility
 
-Currently the option to configure this server as UDP is not implemented, it only receives non-encrypted TCP connections.
-
-This service act as Central Station Receivers (CSR). Encryption support is mandatory for CSRs. So, **this is a non-standard project** at this time.
+Tested with Axel Atlantis, Inim Prime, Inim Smartliving, Satel
 
 ## Install
 
 ```bash
 cd SIAIPrec
+git pull
 npm i
-node server.js --help
 ```
 
 ## Sample config
@@ -22,6 +22,7 @@ node server.js --help
 server:
   port: 8094
   key: '0123456789abcdef'
+  verbose: 2
   diff:
     negative: -20
     positive: 40
@@ -36,18 +37,20 @@ dispatcher:
     port: 1433
 ```
 
+Errors will be displayed when verbose is either 1 or 2.
+Other informative messages with 2.
+0 is to be considered a mostly "silent" mode.
+
 ## Execution
 
 ```bash
-# default config (from config.yml)
-node server.js
-
-# specify service port
-node server.js --port 65000
-
-# debug messages to console
-node server.js --debug
+pm2 start server.js
+pm2 monit
+pm2 logs
+pm2 stop server.js
+pm2 delete server.js
 ```
+Logs are stored in /root/.pm2/logs/
 
 ## Dispatchers
 
@@ -61,15 +64,7 @@ You can specify the number of dispatchers you need.
 ```yaml
 dispatcher:
   -
-    type: 'mssql'
-    format: 'human'
-    user: 'user'
-    password: '$3cr3t'
-    database: 'sia-events'
-    server: '127.0.0.1'
-    port: 1433
-  -
-    type: 'mssql'
+    type: 'mysql'
     format: 'human'
     user: 'other'
     password: '$3cr3t'
@@ -80,10 +75,3 @@ dispatcher:
     type: 'console'
     format: 'human'
 ```
-
-## TODO
-
-- [ ] adding other types of distpatchers
-- [ ] use Facade pattern in dispatch function
-- [ ] use UDP connections
-- [ ] decrypt messages

@@ -386,7 +386,7 @@ const parseRequest = async function(data, key_txt) {
     // Timezone might be UTC or UTC+2
     const tempdiff = parseInt(peTimestamp.format('X')) - parseInt(csrTimestamp.format('X'));
     if (tempdiff > 6900 && tempdiff < 7500) {
-      peTimestamp = moment.tz(msgTimestamp, '_HH:mm:ss,MM-DD-YYYY').local();
+      peTimestamp = moment.tz(msgTimestamp, '_HH:mm:ss,MM-DD-YYYY', 'UTC');
     }
   } else {
     peTimestamp = now;
