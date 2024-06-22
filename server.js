@@ -20,12 +20,10 @@ const config  = yaml.parse(
 
 function decryptHex(encrypted, password) {
   try {
-    let iv = new Buffer(16);
+    let iv = Buffer.alloc(16);
     iv.fill(0);
-    // let crypted = new Buffer(encrypted, 'hex').toString('binary');
-    let crypted = new Buffer(encrypted, 'hex');
+    let crypted = Buffer.from(encrypted, 'hex');
     let aes;
-    //  password = customPadding(password, 24, 0x0, "hex"); // magic happens here
     switch (password.length) {
       case 16:
         aes = 'AES-128-CBC';
@@ -41,8 +39,6 @@ function decryptHex(encrypted, password) {
     }
     let decipher = crypto.createDecipheriv(aes, password, iv);
     decipher.setAutoPadding(false);
-    // let decoded = decipher.update(crypted, 'binary', 'utf8');
-    // decoded += decipher.final('utf8');
     let decoded = decipher.update(crypted, 'hex', 'utf8');
     decoded += decipher.final('utf8');
     return (decoded ? decoded : undefined);
