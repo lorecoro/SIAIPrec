@@ -417,15 +417,19 @@ const parseRequest = async function(data, key_txt) {
       relevantData = relevantData.substring(3);
     }
     sia.code = relevantData.slice(1,3);
-    let address = '';
-    let caret = relevantData.indexOf("^");
-    if (caret == -1) {
-      address = relevantData.substring(3);
+    // We only want the address if it is a "zone"
+    const codetype = codes.find(entry => entry.code === sia.code);
+    if (codetype == 'zone') {
+      let address = '';
+      let caret = relevantData.indexOf("^");
+      if (caret == -1) {
+        address = relevantData.substring(3);
+      }
+      else {
+        address = relevantData.substring(3, caret);
+      }
+      sia.address = address ? Number(address) : null;
     }
-    else {
-      address = relevantData.substring(3, caret);
-    }
-    sia.address = address ? Number(address) : null;
   }
 
   let responseMsg;
