@@ -19,7 +19,7 @@ async function lock() {
   let count = 0;
   while (count < maxAttempts) {
     if (locked) {
-      await new Promise(resolve => setTimeout(resolve, 100));
+      await new Promise(resolve => setTimeout(resolve, 1000));
     }
     count++;
   }
