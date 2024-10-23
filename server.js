@@ -128,14 +128,17 @@ const mysqlDispatch = async function(data, bot) {
   // Update the event type id
   await updateEventType(bot, data.sia.code);
 
+  let idsctec = 0;
   // Update the system code; first try with all 6 chars
-  await updateSystemCode(bot, data.account);
+  idsctec = await updateSystemCode(bot, data.account);
   // Then try with 4 chars
-  await updateSystemCode(bot, data.account.slice(-4));
+  if (!idsctec) {
+    idsctec = await updateSystemCode(bot, data.account.slice(-4));
+  }
 
   // Update the zone id
-  if (data.sia.address && Number.isInteger(data.sia.address)) {
-    await updateZoneCode(bot, data.account, data.sia.address);
+  if (idsctec && data.sia.address && Number.isInteger(data.sia.address)) {
+    await updateZoneCode(bot, idsctec, data.sia.address);
   }
 };
 
@@ -213,6 +216,7 @@ const updateSystemCode = async function(bot, code) {
           console.log('Update impianto_ricezione: set impianto_id to', id);
         }
         await updateData(bot, table, setClause, whereConditions, whereValues);
+        return id;
       }
     }
   });
@@ -224,9 +228,9 @@ const updateSystemCode = async function(bot, code) {
 const updateZoneCode = async function(bot, code, zone) {
   // Look for the id of the zone
   const table = 'imppunti';
-  const columns = ['t.idzone, t.zona, t.codprg'];
+  const columns = ['t.idzone, t.zona, t.idsctec'];
   const whereConditions = [
-    't.codprg = ?',
+    't.idsctec = ?',
     't.zona = ?'
   ];
   const whereValues = [code, zone];
