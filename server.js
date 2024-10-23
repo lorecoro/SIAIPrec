@@ -192,33 +192,42 @@ const updateSystemCode = async function(bot, code) {
   const whereValues = [code];
   const now = moment().local();
 
-  await selectData(bot, table, columns, whereConditions, whereValues, async (err, results) => {
-    if (err) {
-      if(config.server.verbose > 0) {
-        console.error('Error:', err);
-      }
-    } else {
-      if (results.length > 0) {
-        // If found, update the column in the events table
-        const id = results[0].idsctec;
-        const table = 'impianto_ricezione';
-        const setClause = { 
-          't.impianto_id': id,
-          't.updated_at': now.format('YYYY-MM-DD HH:mm:ss')
-        };
-        const whereConditions = [
-          't.impianto_id = ?',
-          't.impianto_pnlcode = ?',
-          'LENGTH(t.segnale_ids) = ?'
-        ];
-        const whereValues = [null, code, 2];
-        if(config.server.verbose > 1) {
-          console.log('Update impianto_ricezione: set impianto_id to', id);
+  return new Promise(async (resolve, reject) => {
+    await selectData(bot, table, columns, whereConditions, whereValues, async (err, results) => {
+      if (err) {
+        if(config.server.verbose > 0) {
+          console.error('Error:', err);
         }
-        await updateData(bot, table, setClause, whereConditions, whereValues);
-        return id;
+        return reject(err); // Reject promise on error
+      } else {
+        if (results.length > 0) {
+          // If found, update the column in the events table
+          const id = results[0].idsctec;
+          const table = 'impianto_ricezione';
+          const setClause = { 
+            't.impianto_id': id,
+            't.updated_at': now.format('YYYY-MM-DD HH:mm:ss')
+          };
+          const whereConditions = [
+            't.impianto_id = ?',
+            't.impianto_pnlcode = ?',
+            'LENGTH(t.segnale_ids) = ?'
+          ];
+          const whereValues = [null, code, 2];
+          if(config.server.verbose > 1) {
+            console.log('Update impianto_ricezione: set impianto_id to', id);
+          }
+          try {
+            await updateData(bot, table, setClause, whereConditions, whereValues);
+            resolve(id);
+          } catch (updateErr) {
+            reject(updateErr);
+          }
+        } else {
+          resolve(null);
+        }
       }
-    }
+    });
   });
 }
 
