@@ -224,9 +224,9 @@ const updateSystemCode = async function(bot, code) {
 const updateZoneCode = async function(bot, code, zone) {
   // Look for the id of the zone
   const table = 'imppunti';
-  const columns = ['t.idzone, t.zona, t.idsctec'];
+  const columns = ['t.idzone, t.zona, t.codprg'];
   const whereConditions = [
-    't.idsctec = ?',
+    't.codprg = ?',
     't.zona = ?'
   ];
   const whereValues = [code, zone];

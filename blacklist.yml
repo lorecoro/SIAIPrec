@@ -12,6 +12,9 @@ codes:
     code: "000484"
     name: "Pison V"
   -
+    code: "000549"
+    name: "Tonet e Galvani"
+  -
     code: "000755"
     name: "ULS Feltre1"
   -
@@ -29,6 +32,12 @@ codes:
   -
     code: "000767"
     name: "ULS Caprile"
+  -
+    code: "000768"
+    name: "ULS Cortina"
+  -
+    code: "000791"
+    name: "Dal Piva"
   -
     code: "001637"
     name: "Inox Piave"
