@@ -1228,7 +1228,7 @@ codes:
     code: "YC"
     shortDescription: "Communication fail"
     longDescription: "Receiver and transmitter"
-    address: "zone"
+    address: "line"
   -
     format: "SIA-DCS"
     code: "YD"

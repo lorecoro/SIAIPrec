@@ -415,7 +415,7 @@ const parseRequest = async function(data, key_txt) {
     sia.code = relevantData.slice(1,3);
     // We only want the address if it is a "zone"
     const thiscode = codes.find(entry => entry.code === sia.code);
-    if (thiscode.address == 'zone') {
+    if (thiscode && thiscode.address == 'zone') {
       let address = '';
       let caret = relevantData.indexOf("^");
       if (caret == -1) {
