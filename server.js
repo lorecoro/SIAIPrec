@@ -138,7 +138,7 @@ const mysqlDispatch = async function(data, bot) {
 
   // Update the zone id
   if (idsctec && data.sia.address && Number.isInteger(data.sia.address)) {
-    await updateZoneCode(bot, idsctec, data.sia.address);
+    await updateZoneCode(bot, idsctec, data.account, data.sia.address);
   }
 };
 
@@ -234,7 +234,7 @@ const updateSystemCode = async function(bot, code) {
 /*
  * Search for the zone id and update the events table
  */
-const updateZoneCode = async function(bot, code, zone) {
+const updateZoneCode = async function(bot, idsctec, code, zone) {
   // Look for the id of the zone
   const table = 'imppunti';
   const columns = ['t.idzone, t.zona, t.idsctec'];
@@ -242,7 +242,7 @@ const updateZoneCode = async function(bot, code, zone) {
     't.idsctec = ?',
     't.zona = ?'
   ];
-  const whereValues = [code, zone];
+  const whereValues = [idsctec, zone];
   const now = moment().local();
 
   await selectData(bot, table, columns, whereConditions, whereValues, async (err, results) => {
@@ -265,7 +265,7 @@ const updateZoneCode = async function(bot, code, zone) {
           't.ingresso_obji = ?',
           't.origine LIKE ?'
         ];
-        const whereValues = [null, code, zone, "SiaIP%"];
+        const whereValues = [null, code, zone.toString(), "SiaIP%"];
         if(config.server.verbose > 1) {
           console.log('Update impianto_ricezione: set ingresso_id to', id);
         }
