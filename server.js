@@ -410,7 +410,7 @@ const parseRequest = async function(data, key_txt) {
     return false;
   }
 
-  let prefix = id.substring(id.indexOf('L'), id.indexOf('#'));
+  let prefix = id.substring(id.indexOf('L'), id.indexOf('#')+1);
   let sequence = id.indexOf('R') != -1?id.substring(0, id.indexOf('R')):id.substring(0, id.indexOf('L'));
 
   let sia = {
@@ -449,7 +449,8 @@ const parseRequest = async function(data, key_txt) {
     let timestamp = csrTimestamp.format('_HH:mm:ss,MM-DD-YYYY');
     responseMsg = `"NAK"0000R0L0[]${timestamp}`;
   } else {
-    responseMsg = `"ACK"${sequence}${prefix}${account}[]`;
+    const account4 = account.substring(0, 4);
+    responseMsg = `"*ACK"${sequence}${prefix}${account4}[]`;
   }
 
   let responseCrc = crc16str(responseMsg);
@@ -464,7 +465,7 @@ const parseRequest = async function(data, key_txt) {
  */
 let server = net.createServer(function(socket) {
   socket.on('error', function(err) {
-    if(config.server.verbose > 0) {
+    if(config.server.verbose > 0 && err.errno !== -104) {
       console.error(err);
     }
   });
