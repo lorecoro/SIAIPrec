@@ -1,6 +1,6 @@
 const fs      = require('fs');
 const yaml    = require('yaml');
-const sql     = require('mysql');
+const sql     = require('mysql2');
 
 // Read the SSL certificate files
 const ca      = fs.readFileSync('ssl/ca-cert.pem');
