@@ -2,11 +2,6 @@ const fs      = require('fs');
 const yaml    = require('yaml');
 const sql     = require('mysql2');
 
-// Read the SSL certificate files
-const ca      = fs.readFileSync('ssl/ca-cert.pem');
-const cert    = fs.readFileSync('ssl/client-cert.pem');
-const key     = fs.readFileSync('ssl/client-key.pem');
-
 const config  = yaml.parse(
   fs.readFileSync('config.yml', 'utf8')
 );
@@ -32,18 +27,23 @@ async function unlock() {
 
 // Function to connect to the database
 async function connectToDb(bot) {
+  // Trim credentials to avoid accidental whitespace issues
+  const user = bot.user && bot.user.toString().trim();
+  const password = bot.password && bot.password.toString().trim();
+
   const con = sql.createConnection({
     host: bot.server,
-    user: bot.user,
-    password: bot.password,
-    database: bot.database,
-    ssl: {
-      ca: ca,
-      cert: cert,
-      key: key
-    }
+    user: user,
+    password: password,
+    database: bot.database
   });
   
+  con.on('auth_switch_request', (data, cb) => {
+    if (data.pluginName === 'caching_sha2_password') {
+      cb(null, Buffer.alloc(0));
+    }
+  });
+
   con.connect((err) => {
     if (err) {
       if(config.server.verbose > 0) {

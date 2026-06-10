@@ -449,8 +449,7 @@ const parseRequest = async function(data, key_txt) {
     let timestamp = csrTimestamp.format('_HH:mm:ss,MM-DD-YYYY');
     responseMsg = `"NAK"0000R0L0[]${timestamp}`;
   } else {
-    const account4 = account.substring(0, 4);
-    responseMsg = `"*ACK"${sequence}${prefix}${account4}[]`;
+    responseMsg = `"*ACK"${sequence}${prefix}${account}[]`;
   }
 
   let responseCrc = crc16str(responseMsg);
